@@ -1973,7 +1973,7 @@ function triggerSound(i,time,vel,step,baseT,warpProb){
 /* ---------- sequencer ---------- */
 let curStep=0, nextTime=0, timerId=null, chainPos=0, drawQ=[];
 /* ---------- arrangement (sections: intro/build/drop/teardown) ---------- */
-let arrBarCount=0, arrMute=new Array(NCH).fill(false), arrOpen=1, arrRiserNow=false;
+let arrHalf=0, arrMute=new Array(NCH).fill(false), arrOpen=1, arrRiserNow=false;
 let arrFade=1, arrChaos=null, arrCutout=null, arrFilt=null, arrGapUntil=0;
 let curArrSecIdx=-1, curArrBar=0;
 function chanIndex(name){
@@ -1981,11 +1981,13 @@ function chanIndex(name){
   return SOUND_DEFS.findIndex(d=>d.id===name);
 }
 function arrTotal(){return state.arr.reduce((a,s)=>a+s.bars,0);}
-function arrSectionAt(bar){
+function secHalves(s){return Math.max(1,Math.round(s.bars*2));}
+function arrHalvesTotal(){return state.arr.reduce((a,s)=>a+secHalves(s),0);}
+function arrSectionAtHalf(half){
   let acc=0;
-  for(let i=0;i<state.arr.length;i++){const s=state.arr[i];
-    if(bar<acc+s.bars) return {sec:s, idx:i, idxInSec:bar-acc, start:acc};
-    acc+=s.bars;}
+  for(let i=0;i<state.arr.length;i++){const s=state.arr[i], h=secHalves(s);
+    if(half<acc+h) return {sec:s, idx:i, idxInSec:half-acc, halves:h, start:acc};
+    acc+=h;}
   return null;
 }
 function applyArrMutes(){
@@ -1997,15 +1999,15 @@ function applyArrMutes(){
     audio.ch[i].fader.gain.setTargetAtTime(audible?s.level*arrFade:0, audio.ctx.currentTime, .04);
   }
 }
-function applyArrBar(t0){
-  const total=arrTotal(); if(!total) return false;
-  const bar=arrBarCount % total;
-  const info=arrSectionAt(bar); if(!info) return false;
+function applyArrHalf(t0){
+  const totalH=arrHalvesTotal(); if(!totalH) return false;
+  const h=arrHalf % totalH;
+  const info=arrSectionAtHalf(h); if(!info) return false;
   state.curPatt=info.sec.p;
   arrMute=new Array(NCH).fill(false);
   (info.sec.mute||[]).forEach(nm=>{const idx=chanIndex(nm); if(idx>=0) arrMute[idx]=true;});
-  const last=info.idxInSec===info.sec.bars-1;
-  const frac=info.sec.bars>1 ? info.idxInSec/(info.sec.bars-1) : 0;
+  const last=info.idxInSec===info.halves-1;
+  const frac=info.halves>1 ? info.idxInSec/(info.halves-1) : 0;
   const o1=info.sec.open!=null?info.sec.open:1;
   const o2=info.sec.open2!=null?info.sec.open2:o1;
   arrOpen=o1+(o2-o1)*frac;
@@ -2016,12 +2018,12 @@ function applyArrBar(t0){
   arrFilt = info.sec.fmode ? {mode:info.sec.fmode, depth:info.sec.fdepth!=null?info.sec.fdepth:.4, rate:info.sec.frate||'1/1'} : null;
   if(info.idxInSec===0 && info.sec.gap) arrGapUntil = t0 + info.sec.gap*sp16();
   applyArrMutes();
-  curArrSecIdx=info.idx; curArrBar=bar;
+  curArrSecIdx=info.idx; curArrBar=Math.floor(h/2);
   if(info.sec.riser && last){
     const ridx=chanIndex('riser');
     if(ridx>=0) triggerSound(ridx, t0, .9, null, t0, 0);
   }
-  arrBarCount++;
+  arrHalf++;
   return !!(info.sec.fillEnd && last);
 }
 /* generic 8-section 128-bar arrangement from current kit content */
@@ -2054,20 +2056,19 @@ function swingDelay(){return (state.swing-50)/100*2*sp16();}
 function scheduleLoop(){
   const ctx=audio.ctx;
   while(nextTime < ctx.currentTime + 0.12){
-    if(curStep===0){
-      barIdx++;
-      const arrActive=state.arrOn && state.arr.length;
-      if(arrActive){
-        const arrFill=applyArrBar(nextTime);
-        fillBar = fillNext || arrFill;
-      } else {
-        if(state.songMode && state.chain.length){
-          state.curPatt=state.chain[chainPos % state.chain.length];
-          chainPos++;
-        }
-        const F0=state.feels[state.curPatt];
-        fillBar = fillNext || (F0.fill.every>0 && (barIdx % F0.fill.every)===F0.fill.every-1);
+    if(curStep===0) barIdx++;
+    const arrActive=state.arrOn && state.arr.length;
+    if(arrActive && (curStep===0 || curStep===8)){
+      const arrFill=applyArrHalf(nextTime);
+      if(curStep===0){ fillBar = fillNext || arrFill; if(fillNext){ fillNext=false; renderFillBtn(); } }
+      else if(arrFill){ fillBar = true; }
+    } else if(curStep===0){
+      if(state.songMode && state.chain.length){
+        state.curPatt=state.chain[chainPos % state.chain.length];
+        chainPos++;
       }
+      const F0=state.feels[state.curPatt];
+      fillBar = fillNext || (F0.fill.every>0 && (barIdx % F0.fill.every)===F0.fill.every-1);
       if(fillNext){ fillNext=false; renderFillBtn(); }
     }
     const F=state.feels[state.curPatt], G=F.g, H=F.h, R=state.route;
@@ -2170,7 +2171,7 @@ function scheduleLoop(){
 function play(startBar){
   initAudio();
   audio.ctx.resume().then(()=>{
-    state.playing=true; curStep=0; chainPos=0; barIdx=-1; fillBar=false; arrBarCount=startBar||0; arrFade=1; arrChaos=null; arrCutout=null; arrFilt=null; arrGapUntil=0;
+    state.playing=true; curStep=0; chainPos=0; barIdx=-1; fillBar=false; arrHalf=(startBar||0)*2; arrFade=1; arrChaos=null; arrCutout=null; arrFilt=null; arrGapUntil=0;
     nextTime=audio.ctx.currentTime+0.06;
     audio.playT0=nextTime;
     timerId=setInterval(scheduleLoop,25);
@@ -2180,7 +2181,7 @@ function play(startBar){
 }
 function stop(){
   state.playing=false; clearInterval(timerId); timerId=null; drawQ=[]; fillNext=false;
-  arrMute=new Array(NCH).fill(false); arrOpen=1; arrFade=1; arrChaos=null; arrCutout=null; arrFilt=null; arrGapUntil=0; curArrSecIdx=-1; applyArrMutes();
+  arrMute=new Array(NCH).fill(false); arrOpen=1; arrFade=1; arrChaos=null; arrCutout=null; arrFilt=null; arrGapUntil=0; arrHalf=0; curArrSecIdx=-1; applyArrMutes();
   document.querySelectorAll('.cell.ph').forEach(e=>e.classList.remove('ph'));
   document.querySelectorAll('.ncell.ph').forEach(e=>e.classList.remove('ph'));
   lcdBeatEls.forEach(e=>e.classList.remove('on'));
@@ -2357,7 +2358,7 @@ function arrPlayFrom(idx){
   const start=Math.max(0, arrSecStartBar(idx)-2);
   if(!state.arrOn){ state.arrOn=true; if(state.songMode) state.songMode=false; }
   if(!state.playing){ play(start); }
-  else { arrBarCount=start; curStep=0; drawQ=[]; nextTime=audio.ctx.currentTime+0.05; }
+  else { arrHalf=start*2; curStep=0; drawQ=[]; nextTime=audio.ctx.currentTime+0.05; }
   renderArr(); renderLcd();
 }
 /* ---------- random arrangement generator ---------- */
@@ -2382,6 +2383,8 @@ function buildRandomArr(v){
     open:.5,fchaos:{drop:.3+Math.random()*.3,oct:.1+Math.random()*.2},fcut:.3});
   secs.push({n:Math.random()<v?'Rebuild':'Build',p:B,bars:8,open:.5,open2:.95,fillEnd:true,riser:true});
   secs.push({n:'Drop',p:A,bars:pick([16,16,12]),gap:2,mute:[],open:1,fcut:.2+Math.random()*.2});
+  if(Math.random()<v*0.8){ const st=pick([.5,1,.5]);
+    secs.push({n:'Stutter',p:C,bars:st,gap:1,mute:[...mel.slice(0,1)],open:.7,fchaos:{drop:.5,oct:.3},fcut:.5}); }
   secs.push({n:'Breakdown',p:C,bars:pick([16,8,12]),mute:['kick',...perc.slice(1)],open:.35,open2:.95,
     fmode:'sweep',fdepth:.5+Math.random()*.3,frate:'2bar',fcut:.4});
   if(Math.random()<v) secs.push({n:'Solo Shift',p:C,bars:8,mute:['kick'],open:.6,
@@ -2391,6 +2394,7 @@ function buildRandomArr(v){
   secs.push({n:'Outro',p:cHas?C:A,bars:pick([4,8,8]),open:1,open2:.3,fade:'out'});
   return secs;
 }
+function barLabel(b){ return b<1 ? Math.round(b*4)+'bt' : (b%1===0?b+'b':b+'b'); }
 function renderArr(){
   arrCtlEl.innerHTML='';
   const has=state.arr.length>0;
@@ -2421,8 +2425,8 @@ function renderArr(){
     const seg=el('div','arrseg '+secClass(s.n)
       +(i===curArrSecIdx&&state.arrOn&&state.playing?' cur':'')
       +(arrEdit&&i===arrSel?' sel':''));
-    seg.style.flexGrow=s.bars;
-    seg.append(el('b',null,s.n), el('span',null,s.bars+'b'));
+    seg.style.flexGrow=Math.max(.5,s.bars);
+    seg.append(el('b',null,s.n), el('span',null,barLabel(s.bars)));
     if(arrEdit){
       const h=el('div','arrhandle'); h.setAttribute('aria-label','Resize '+s.n);
       let startX=0, startBars=0, dragging=false;
@@ -2431,9 +2435,9 @@ function renderArr(){
       h.addEventListener('pointermove',e=>{ if(!dragging) return;
         const w=arrTimelineEl.getBoundingClientRect().width||300;
         const perBar=w/Math.max(1,arrTotal());
-        let nb=Math.round((startBars+(e.clientX-startX)/perBar)/2)*2;
-        nb=Math.min(64,Math.max(4,nb));
-        if(nb!==s.bars){ s.bars=nb; seg.style.flexGrow=nb; seg.querySelector('span').textContent=nb+'b'; arrLenEl.textContent=arrTotal()+' bars'; }
+        let nb=Math.round((startBars+(e.clientX-startX)/perBar)*2)/2;
+        nb=Math.min(64,Math.max(.5,nb));
+        if(nb!==s.bars){ s.bars=nb; seg.style.flexGrow=Math.max(.5,nb); seg.querySelector('span').textContent=barLabel(nb); arrLenEl.textContent=arrTotal()+' bars'; }
       });
       ['pointerup','pointercancel'].forEach(ev=>h.addEventListener(ev,()=>{ if(dragging){dragging=false; renderArr();} }));
       seg.append(h);
@@ -2449,15 +2453,16 @@ function renderArr(){
   if(arrEdit){
     if(arrSel>=0 && arrSel<state.arr.length){
       const s=state.arr[arrSel];
-      arrToolsEl.append(el('span','tname',s.n+' · '+s.bars+'b'));
+      arrToolsEl.append(el('span','tname',s.n+' · '+barLabel(s.bars)));
       const mk=(lab,cls,fn)=>{const b=el('button','tbtn'+(cls?' '+cls:''),lab); b.addEventListener('click',fn); return b;};
       arrToolsEl.append(
         mk('◀','',()=>{ if(arrSel>0){ [state.arr[arrSel-1],state.arr[arrSel]]=[state.arr[arrSel],state.arr[arrSel-1]]; arrSel--; renderArr(); }}),
-        mk('▶','',()=>{ if(arrSel<state.arr.length-1){ [state.arr[arrSel+1],state.arr[arrSel]]=[state.arr[arrSel],state.arr[arrSel+1]]; arrSel++; renderArr(); }}),
-        mk('−4','',()=>{ s.bars=Math.max(4,s.bars-4); renderArr(); }),
-        mk('+4','',()=>{ s.bars=Math.min(64,s.bars+4); renderArr(); }),
-        mk('✕','del',()=>{ state.arr.splice(arrSel,1); arrSel=-1; renderArr(); renderLcd(); })
+        mk('▶','',()=>{ if(arrSel<state.arr.length-1){ [state.arr[arrSel+1],state.arr[arrSel]]=[state.arr[arrSel],state.arr[arrSel+1]]; arrSel++; renderArr(); }})
       );
+      [['2bt',.5],['1b',1],['2b',2],['4b',4],['8b',8],['16b',16]].forEach(([lab,v])=>{
+        arrToolsEl.append(mk(lab, s.bars===v?'':'', ()=>{ s.bars=v; renderArr(); }));
+      });
+      arrToolsEl.append(mk('✕','del',()=>{ state.arr.splice(arrSel,1); arrSel=-1; renderArr(); renderLcd(); }));
     }
     const add=el('button','tbtn','＋ Section');
     add.addEventListener('click',()=>{ state.arr.push({n:'Build',p:0,bars:8,mute:[],open:.5,open2:.9}); arrSel=state.arr.length-1; renderArr(); });
