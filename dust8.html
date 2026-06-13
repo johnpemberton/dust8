@@ -127,7 +127,7 @@
   .lane .bar:nth-child(4n+1){border-left:2px solid #45454f;}
   .lane .fill{position:absolute; left:2px; right:2px; background:var(--red); border-radius:2px;}
 
-  .routegrid{display:grid; grid-template-columns:62px repeat(8,1fr); gap:4px; margin-top:8px;}
+  .routegrid{display:grid; grid-template-columns:62px repeat(12,1fr); gap:4px; margin-top:8px;}
   .routegrid .rlab{font-size:10px; color:var(--dim); font-weight:700; display:flex; align-items:center; letter-spacing:.04em;}
   .routegrid .rhead{font-size:9px; color:var(--dim); text-align:center; font-weight:700; align-self:end; padding-bottom:2px;}
   .rcell{min-height:28px; border-radius:5px; border:1px solid var(--line); background:var(--panel2); padding:0;}
@@ -363,9 +363,29 @@ const SOUND_DEFS = [
    {k:'tone',  l:'Tone',  min:800,max:8000,step:50,def:3200,u:'Hz'},
    {k:'decay', l:'Decay', min:.1,max:1,step:.01,def:.5,u:'s'},
    {k:'crackle',l:'Crackle',min:0,max:1,step:.01,def:.6},
-   {k:'hiss',  l:'Hiss',  min:0,max:1,step:.01,def:.35}]}
+   {k:'hiss',  l:'Hiss',  min:0,max:1,step:.01,def:.35}]},
+ {id:'riser', name:'Riser', ab:'RS', sub:'air-raid rise', params:[
+   {k:'start', l:'Start', min:100,max:1000,step:5,def:220,u:'Hz'},
+   {k:'rise',  l:'Rise',  min:.5,max:4,step:.1,def:2.5,u:'oct'},
+   {k:'time',  l:'Time',  min:.5,max:6,step:.1,def:3,u:'s'},
+   {k:'fall',  l:'Fall',  min:0,max:1,step:.01,def:.3}]},
+ {id:'siren', name:'Siren', ab:'SI', sub:'dub siren', params:[
+   {k:'tune',  l:'Tune',  min:200,max:1200,step:5,def:520,u:'Hz'},
+   {k:'rate',  l:'Rate',  min:.5,max:12,step:.1,def:5,u:'Hz'},
+   {k:'depth', l:'Depth', min:0,max:1,step:.01,def:.6},
+   {k:'time',  l:'Time',  min:.3,max:4,step:.1,def:1.5,u:'s'}]},
+ {id:'bleep', name:'Bleep', ab:'BL', sub:'sci-fi blip', params:[
+   {k:'tune',  l:'Tune',  min:300,max:3000,step:10,def:880,u:'Hz'},
+   {k:'decay', l:'Decay', min:.02,max:.5,step:.01,def:.12,u:'s'},
+   {k:'drop',  l:'Drop',  min:0,max:1,step:.01,def:.2},
+   {k:'harm',  l:'Harm',  min:0,max:1,step:.01,def:.3}]},
+ {id:'zap', name:'Zap', ab:'ZP', sub:'laser sweep', params:[
+   {k:'start', l:'Start', min:800,max:6000,step:20,def:2400,u:'Hz'},
+   {k:'fall',  l:'Fall',  min:0,max:1,step:.01,def:.7},
+   {k:'decay', l:'Decay', min:.05,max:.6,step:.01,def:.2,u:'s'},
+   {k:'buzz',  l:'Buzz',  min:0,max:1,step:.01,def:.3}]}
 ];
-const N=8, NCH=10, STEPS=16, PNAMES=['A','B','C','D'];
+const N=12, NCH=14, STEPS=16, PNAMES=['A','B','C','D'];
 const SNARE=1, CHAT=2, OHAT=3, KICK=0;
 const CHAN_NAMES=[...SOUND_DEFS.map(d=>d.name),'Bass','Keys'];
 
@@ -377,7 +397,11 @@ const VARIANTS=[
  [{n:'Snap',p:{tone:1600,decay:.2,spread:.009,body:.35}},{n:'Tight',p:{tone:1300,decay:.25,spread:.011,body:.45}},{n:'Room',p:{tone:1000,decay:.5,spread:.016,body:.7}}],
  [{n:'Wood',p:{tune:480,decay:.06,click:.7,body:.45}},{n:'Hi',p:{tune:680,decay:.05,click:.85,body:.3}},{n:'Knock',p:{tune:360,decay:.09,click:.5,body:.6}}],
  [{n:'Hi',p:{tune:265,decay:.14,bend:.35,slap:.4}},{n:'Lo',p:{tune:160,decay:.24,bend:.45,slap:.25}},{n:'Bongo',p:{tune:330,decay:.1,bend:.25,slap:.5}}],
- [{n:'Light',p:{tone:4200,decay:.4,crackle:.4,hiss:.22}},{n:'Dusty',p:{tone:3000,decay:.6,crackle:.7,hiss:.4}},{n:'Storm',p:{tone:2400,decay:.95,crackle:.95,hiss:.55}}]
+ [{n:'Light',p:{tone:4200,decay:.4,crackle:.4,hiss:.22}},{n:'Dusty',p:{tone:3000,decay:.6,crackle:.7,hiss:.4}},{n:'Storm',p:{tone:2400,decay:.95,crackle:.95,hiss:.55}}],
+ [{n:'Air Raid',p:{start:180,rise:3,time:4.5,fall:.2}},{n:'Quick Up',p:{start:300,rise:2,time:1.5,fall:.4}},{n:'Doppler',p:{start:600,rise:1,time:2.5,fall:.9}}],
+ [{n:'Classic',p:{tune:520,rate:5,depth:.6,time:1.5}},{n:'Slow Wail',p:{tune:420,rate:1.2,depth:.8,time:3}},{n:'Panic',p:{tune:700,rate:9,depth:.5,time:1}}],
+ [{n:'Sonar',p:{tune:880,decay:.25,drop:.1,harm:.1}},{n:'Blip',p:{tune:1400,decay:.08,drop:.3,harm:.2}},{n:'Sub Bleep',p:{tune:420,decay:.2,drop:.1,harm:.05}}],
+ [{n:'Laser',p:{start:2400,fall:.7,decay:.2,buzz:.3}},{n:'Dive Bomb',p:{start:4000,fall:.9,decay:.35,buzz:.2}},{n:'Pew',p:{start:1800,fall:.6,decay:.1,buzz:.5}}]
 ];
 
 const MODPRESETS=[
@@ -413,7 +437,10 @@ const PATCHES=[
  {name:'Tape Choir',  w1:'triangle',w2:'sawtooth',oct2:0,det:11,mix2:.4,cut:1500,fa:350,q:.7,a:.3,d:.5,s:.75,r:.9, vibR:4.5,vibD:7, trem:.1,tremR:3.8},
  {name:'Skank Organ', w1:'square',w2:'square',  oct2:12,det:3, mix2:.32,cut:1700, fa:220, q:.8, a:.004,d:.12,s:.25,r:.12,vibR:0,vibD:0, trem:0},
  {name:'Melodica',    w1:'square',w2:'sine',    oct2:0, det:5, mix2:.3, cut:1800, fa:250, q:.8, a:.03, d:.2, s:.7, r:.25,vibR:5.5,vibD:10,trem:0},
- {name:'Reese Bass',  w1:'sawtooth',w2:'sawtooth',oct2:0,det:18,mix2:.45,cut:500,  fa:200, q:.85,a:.035,d:.35,s:.9, r:.3, vibR:0,vibD:0, trem:0}
+ {name:'Reese Bass',  w1:'sawtooth',w2:'sawtooth',oct2:0,det:18,mix2:.45,cut:500,  fa:200, q:.85,a:.035,d:.35,s:.9, r:.3, vibR:0,vibD:0, trem:0},
+ {name:'Xtal Pad',    w1:'triangle',w2:'triangle',oct2:12,det:8,mix2:.35,cut:2400, fa:200, q:.6, a:.6,  d:.8, s:.85,r:1.6,vibR:4.6,vibD:6, trem:.08,tremR:3.5},
+ {name:'Rubber Bass', w1:'triangle',w2:'square',  oct2:0, det:4, mix2:.3, cut:850,  fa:500, q:.9, a:.01, d:.25,s:.6, r:.22,vibR:0,vibD:0, trem:0},
+ {name:'Detroit Strings',w1:'sawtooth',w2:'sawtooth',oct2:0,det:12,mix2:.5,cut:3000, fa:800, q:.8, a:.02, d:.3, s:.5, r:.4, vibR:5,vibD:4, trem:0}
 ];
 function patchIdx(name){return Math.max(0,PATCHES.findIndex(p=>p.name===name));}
 
@@ -426,8 +453,8 @@ function defChan(i){
   if(i>=N) return {fx:{drive:.15,crush:.08,delay:.08}, eq:{low:0,mid:0,high:0}, pan:0,
                    level:i===8?.75:.42, mute:false, solo:false};
   return {params:defParams(i),
-    fx:{drive:.15,crush:.1,delay:0}, eq:{low:0,mid:0,high:0}, pan:0,
-    level:[.95,.85,.6,.55,.7,.6,.65,.5][i], mute:false, solo:false, mod:defMod(i)};}
+    fx:{drive:.15,crush:.1,delay:i>=8?.25:0}, eq:{low:0,mid:0,high:0}, pan:0,
+    level:[.95,.85,.6,.55,.7,.6,.65,.5,.45,.5,.5,.5][i], mute:false, solo:false, mod:defMod(i)};}
 function feelFrom(idx, fill){const m=MODPRESETS[idx];
   return {presetIdx:idx, h:{...m.h}, g:{...m.g},
           fill:{every:(fill&&fill.every!=null)?fill.every:4,
@@ -441,16 +468,17 @@ function defPart(patch,viewK){return {patch:patch, mac:{tone:.5,punch:.5,att:.5,
   viewK:viewK, seq:[[],[],[],[]],
   mod:{target:'tone', shape:'sine', rate:'1/4', depth:0},
   lane:{on:false, target:'delay', vals:new Array(STEPS).fill(0)},
-  chaos:{drop:0, oct:0, smear:0}};}
+  chaos:{drop:0, oct:0, smear:0},
+  filt:{type:'lp', cut:12000, res:.7, mode:'off', rate:'1/1', depth:.5, cutout:0}};}
 
 const state={
   bpm:91, swing:54, playing:false, curPatt:0, songMode:false, chain:[],
   selSound:0, selTrack:0,
   feels:[feelFrom(1),feelFrom(1),feelFrom(1),feelFrom(1)],
   feelLink:true, feelEdit:0,
-  route:{ghost:  [false,true,true,false,false,true,true,true],
-         drop:   [false,false,true,true,true,false,true,true],
-         ratchet:[false,true,true,false,false,true,false,false]},
+  route:{ghost:  [false,true,true,false,false,true,true,true,false,false,true,false],
+         drop:   [false,false,true,true,true,false,true,true,false,true,true,true],
+         ratchet:[false,true,true,false,false,true,false,false,false,false,true,true]},
   patterns:[emptyPatt(),emptyPatt(),emptyPatt(),emptyPatt()],
   chans:Array.from({length:NCH},(_,i)=>defChan(i)),
   master:{level:.85, comp:.5},
@@ -661,10 +689,11 @@ const PRESETS=[
         1:{params:{tune:185,decay:.3,snap:.75},fx:{delay:.55}},
         5:{level:.8,params:{tune:520},fx:{delay:.35}},
         2:{level:.45}, 3:{fx:{delay:.3}},
-        6:{level:.6,pan:.25,fx:{delay:.25}}, 7:{level:.45}},
+        6:{level:.6,pan:.25,fx:{delay:.25}}, 7:{level:.45},
+        9:{level:.55,fx:{delay:.5}}, 10:{fx:{delay:.45}}},
  A:['........X.......',null,'x.x.x.x.x.x.x.x.','..............x.',null,'........X.......',null,'x.......x.......'],
- B:['........X.....x.','........X.......','x.x.x.x.x.x.x.x.','......x.......x.',null,'....x...X...x...',null,'x.......x.......'],
- C:[null,null,null,'..............X.',null,'........X.......',null,'x.x.x.x.x.x.x.x.'],
+ B:['........X.....x.','........X.......','x.x.x.x.x.x.x.x.','......x.......x.',null,'....x...X...x...',null,'x.......x.......',null,null,'..........x.....',null],
+ C:[null,null,null,'..............X.',null,'........X.......',null,'x.x.x.x.x.x.x.x.',null,'X...............',null,null],
  chain:[0,0,1,0,2,1,0,2],
  synth:{root:45, scale:'minor',
   bass:{patch:'Sub Bass', lvl:.9, fx:{drive:.2},
@@ -672,6 +701,7 @@ const PRESETS=[
    B:[[0,0,4],[6,0,1],[8,5,2],[12,4,2]],
    C:[[0,0,8]]},
   keys:{patch:'Skank Organ', lvl:.41, fx:{delay:.25},
+   filt:{type:'lp',cut:3500,res:1,mode:'off',rate:'1/1',depth:.5,cutout:.35},
    mod:{target:'tone',shape:'sine',rate:'1/1',depth:.4},
    chaos:{drop:.3},
    lane:{on:true,target:'delay',set:{14:.9}},
@@ -685,7 +715,7 @@ const PRESETS=[
         5:{level:.7,fx:{delay:.3}},
         2:{level:.5}, 7:{level:.4}},
  A:['X...X...X...X...',null,'..x...x...x...x.','..............x.',null,'....x.......x...',null,'x.......x.......'],
- B:['X...X...X...X...','............X...','..x...x...x...xx',null,null,'....x...x...x...',null,'x.......x.......'],
+ B:['X...X...X...X...','............X...','..x...x...x...xx',null,null,'....x...x...x...',null,'x.......x.......',null,null,'......x.......x.',null],
  C:['X.......X.......',null,null,null,null,'....x.......x...',null,'x.x.x.x.x.x.x.x.'],
  chain:[0,0,1,0,0,0,1,2],
  synth:{root:43, scale:'minor',
@@ -726,10 +756,11 @@ const PRESETS=[
         1:{fx:{delay:.6},params:{tune:180,decay:.32}},
         5:{level:.8,fx:{delay:.4},params:{tune:540}},
         2:{level:.4}, 3:{fx:{delay:.35}},
-        6:{level:.6,pan:.3,fx:{delay:.3}}, 7:{level:.5,params:{crackle:.7,hiss:.4}}},
+        6:{level:.6,pan:.3,fx:{delay:.3}}, 7:{level:.5,params:{crackle:.7,hiss:.4}},
+        8:{fx:{delay:.4},level:.4}, 11:{fx:{delay:.45}}},
  A:['........X.......',null,'x.x.x.x.x.x.x.x.','......x.........',null,'........X.......','..x..........x..','x.......x.......'],
- B:['........X.....x.','........X.......','x.x.x.x.x.x.x.x.','......x.......x.',null,'....x...X...x...','..x..........x..','x.......x.......'],
- C:[null,null,null,'..............X.',null,'........X.......','..x..........x..','x.x.x.x.x.x.x.x.'],
+ B:['........X.....x.','........X.......','x.x.x.x.x.x.x.x.','......x.......x.',null,'....x...X...x...','..x..........x..','x.......x.......',null,null,null,'..............x.'],
+ C:[null,null,null,'..............X.',null,'........X.......','..x..........x..','x.x.x.x.x.x.x.x.','X...............',null,null,null],
  chain:[0,0,1,2,0,1,2,2],
  synth:{root:43, scale:'minor',
   bass:{patch:'Sub Bass', lvl:.9, fx:{drive:.2},
@@ -737,6 +768,7 @@ const PRESETS=[
    B:[[0,0,4],[8,5,2],[12,4,2]],
    C:[[0,0,8]]},
   keys:{patch:'Skank Organ', lvl:.35, fx:{delay:.3},
+   filt:{type:'lp',cut:2800,res:1.5,mode:'sweep',rate:'2bar',depth:.4,cutout:.45},
    mod:{target:'tone',shape:'sine',rate:'1/1',depth:.35},
    chaos:{drop:.4},
    lane:{on:true,target:'delay',set:{10:.7,14:.9}},
@@ -750,7 +782,7 @@ const PRESETS=[
         5:{level:.75,fx:{delay:.25}},
         6:{level:.7,pan:-.2}, 2:{level:.5}, 7:{level:.4}},
  A:['X.....x.X.......',null,'..x...x...x...x.',null,null,'....x.......x...','.x....x..x....x.','x.......x.......'],
- B:['X.....x.X.....x.','............X...','..x...x...x...xx','..............x.',null,'....x.......x..x','.x....x..x....x.','x.......x.......'],
+ B:['X.....x.X.....x.','............X...','..x...x...x...xx','..............x.',null,'....x.......x..x','.x....x..x....x.','x.......x.......',null,'........X.......',null,null],
  C:['X.......X.......',null,null,null,null,'....x.......x...','.x....x..x....x.','x.x.x.x.x.x.x.x.'],
  chain:[0,0,1,0,0,1,2,1],
  synth:{root:45, scale:'minor',
@@ -771,7 +803,7 @@ const PRESETS=[
         2:{level:.45}, 6:{level:.6,pan:.25}, 7:{level:.45}},
  A:['X...x...X...x...',null,'x.x.x.x.x.x.x.x.','..............x.',null,'........X.......','..x.....x.......','x.......x.......'],
  B:['X...x...X...x...','........X.......','x.x.x.x.x.x.x.x.','......x.......x.',null,'....x...X...x...','..x.....x....x..','x.......x.......'],
- C:['X.......X.......',null,null,null,null,'........X.......',null,'x.x.x.x.x.x.x.x.'],
+ C:['X.......X.......',null,null,null,null,'........X.......',null,'x.x.x.x.x.x.x.x.',null,null,'x.......x.......',null],
  chain:[0,0,1,0,0,1,2,1],
  synth:{root:40, scale:'minor',
   bass:{patch:'Sub Bass', lvl:.9,
@@ -789,11 +821,12 @@ const PRESETS=[
         1:{params:{tune:210,snap:.9,decay:.18},fx:{delay:.25,crush:.2}},
         2:{level:.5}, 3:{fx:{delay:.25}}, 7:{level:.35}},
  A:['X.........x.....','....X..x....X...','x.x.x.x.x.x.x.x.','..............x.',null,'..........x....x',null,'x.......x.......'],
- B:['X.....x...x.....','....X..x..x.X..x','x.x.x.x.x.x.x.x.','......x.......x.',null,'..........x....x',null,'x.......x.......'],
- C:['X...............','........X.......',null,null,null,null,null,'x.x.x.x.x.x.x.x.'],
+ B:['X.....x...x.....','....X..x..x.X..x','x.x.x.x.x.x.x.x.','......x.......x.',null,'..........x....x',null,'x.......x.......',null,null,null,'...............x'],
+ C:['X...............','........X.......',null,null,null,null,null,'x.x.x.x.x.x.x.x.','X...............',null,null,null],
  chain:[0,0,1,0,0,1,2,1],
  synth:{root:38, scale:'minor',
   bass:{patch:'Reese Bass', lvl:.9, fx:{drive:.08}, eq:{low:3,mid:-3,high:-7},
+   filt:{type:'lp',cut:800,res:2,mode:'sweep',rate:'1/2',depth:.35},
    A:[[0,0,10],[12,3,4]],
    B:[[0,0,10],[12,4,4]],
    C:[[0,0,16]]},
@@ -810,7 +843,7 @@ const PRESETS=[
         2:{level:.55}, 5:{fx:{delay:.2}}, 7:{level:.4,params:{crackle:.8}}},
  A:['X.........x..x..','....X.......X..x','x.x.x.xxx.x.x.x.','..............x.',null,'.......x........',null,'x.......x.......'],
  B:['X.........x..x..','....X..x....X.x.','x.x.x.xxx.x.x.x.','......x.........',null,'.......x.......x',null,'x.......x.......'],
- C:['X...............','........X.......','x...x...x...x...',null,null,null,null,'x.x.x.x.x.x.x.x.'],
+ C:['X...............','........X.......','x...x...x...x...',null,null,null,null,'x.x.x.x.x.x.x.x.',null,'X...............',null,null],
  chain:[0,0,1,0,0,0,1,2],
  synth:{root:36, scale:'minor',
   bass:{patch:'Reese Bass', lvl:.9, fx:{drive:.1}, eq:{low:3,mid:-3,high:-7},
@@ -833,6 +866,7 @@ const PRESETS=[
  chain:[0,0,1,0,0,0,1,2],
  synth:{root:41, scale:'minor',
   bass:{patch:'Reese Bass', lvl:.85, eq:{low:3,mid:-2,high:-7},
+   filt:{type:'lp',cut:700,res:1.5,mode:'sweep',rate:'2bar',depth:.4},
    A:[[0,0,12],[12,4,4]],
    B:[[0,5,12],[12,3,4]],
    C:[[0,0,16]]},
@@ -847,8 +881,8 @@ const PRESETS=[
         1:{params:{tune:185,decay:.26},fx:{delay:.45}},
         5:{fx:{delay:.3}}, 2:{level:.45}, 6:{level:.55,pan:.2}, 7:{level:.45}},
  A:['X.............x.','........X.......','..x...x...x...x.','......x.........',null,'....x.......x...','..x.........x...','x.......x.......'],
- B:['X.....x.......x.','........X.....x.','..x...x...x...x.','......x.......x.',null,'....x.......x..x','..x.........x...','x.......x.......'],
- C:['X...............','........X.......',null,null,null,'....x.......x...',null,'x.x.x.x.x.x.x.x.'],
+ B:['X.....x.......x.','........X.....x.','..x...x...x...x.','......x.......x.',null,'....x.......x..x','..x.........x...','x.......x.......',null,null,'....x.......x...',null],
+ C:['X...............','........X.......',null,null,null,'....x.......x...',null,'x.x.x.x.x.x.x.x.','X...............',null,null,null],
  chain:[0,0,1,0,2,1,0,1],
  synth:{root:36, scale:'minor',
   bass:{patch:'Sub Bass', lvl:.92, fx:{drive:.1}, eq:{low:3,mid:-2,high:-6},
@@ -860,7 +894,198 @@ const PRESETS=[
    lane:{on:true,target:'delay',set:{14:.9}},
    A:[[0,17,3],[6,16,2],[8,14,4]],
    B:[[0,19,3],[6,17,2],[8,16,4]],
-   C:[[0,14,8]]}}}
+   C:[[0,14,8]]}}},
+{name:"Xtal Dreams", group:'ambient', bpm:106, swing:52, feel:1, fill:{every:8,amt:.3,style:'hat'},
+ master:{comp:.4}, delay:{time:'8d',fb:.45,tone:3400},
+ chans:{0:{params:{tune:50,decay:.5,punch:.3,click:.1},fx:{drive:.1}},
+        2:{level:.45,params:{decay:.05,tone:7800}},
+        3:{level:.45}, 5:{level:.55,fx:{delay:.3}},
+        7:{level:.6,params:{crackle:.3,hiss:.55,tone:5000}},
+        10:{level:.45,fx:{delay:.5},params:{tune:880,decay:.25,drop:.1,harm:.1}}},
+ A:['X...x...X...x...',null,'..x...x...x...x.','..............x.',null,'....x.......x...',null,'x.......x.......'],
+ B:['X...x...X...x..x',null,'..x...x...x...x.','......x.......x.',null,'....x.......x...','.............x..','x.......x.......',null,null,'..........x.....',null],
+ C:[null,null,'..x...x...x...x.','......x.........',null,null,null,'x.x.x.x.x.x.x.x.',null,null,'x.......x.......',null],
+ chain:[0,0,1,0,2,1,0,1],
+ synth:{root:45, scale:'dorian',
+  bass:{patch:'Rubber Bass', lvl:.8, eq:{high:-4},
+   A:[[0,0,2],[4,7,2],[8,0,2],[12,5,2]],
+   B:[[0,0,2],[4,7,2],[8,3,2],[12,4,2]],
+   C:[[0,0,12]]},
+  keys:{patch:'Xtal Pad', lvl:.35, fx:{delay:.25},
+   filt:{type:'lp',cut:1800,res:.8,mode:'sweep',rate:'2bar',depth:.5},
+   mod:{target:'tone',shape:'sine',rate:'1/1',depth:.3},
+   A:[[0,[14,16,18,22],14]],
+   B:[[0,[19,21,23,27],14]],
+   C:[[0,[12,14,16,18],14]]}}},
+{name:"Ageispolis Drift", group:'ambient', bpm:102, swing:54, feel:1, fill:{every:8,amt:.3,style:'mixed'},
+ master:{comp:.35}, delay:{time:'8d',fb:.5,tone:3200},
+ chans:{0:{params:{tune:48,decay:.55,punch:.35,click:.1}},
+        4:{level:.55,params:{tone:950,decay:.45,spread:.015,body:.65}},
+        2:{level:.4}, 5:{level:.5,fx:{delay:.35}},
+        7:{level:.55,params:{crackle:.35,hiss:.5}},
+        10:{level:.45,fx:{delay:.55},params:{tune:1100,decay:.2,drop:.15,harm:.1}}},
+ A:['X.....x...X.....',null,'x.x.x.x.x.x.x.x.','......x.........','....x.......x...','..........x.....',null,'x.......x.......',null,null,'..x..........x..',null],
+ B:['X.....x...X...x.',null,'x.x.x.x.x.x.x.x.','......x.........','....x.......x...','..........x....x',null,'x.......x.......',null,null,'..x.....x....x..',null],
+ C:[null,null,null,'......x.........',null,null,null,'x.x.x.x.x.x.x.x.',null,null,'..x..........x..',null],
+ chain:[0,1,0,2],
+ synth:{root:38, scale:'dorian',
+  bass:{patch:'Rubber Bass', lvl:.8, eq:{high:-4},
+   A:[[0,0,3],[6,4,1],[8,3,3],[14,2,1]],
+   B:[[0,0,3],[6,4,1],[8,5,3],[14,4,1]],
+   C:[[0,0,12]]},
+  keys:{patch:'Xtal Pad', lvl:.35, fx:{delay:.3},
+   filt:{type:'lp',cut:2200,res:.8,mode:'rand',rate:'1/1',depth:.3},
+   chaos:{smear:.1},
+   mod:{target:'pan',shape:'sine',rate:'1/1',depth:.3},
+   A:[[0,[14,16,18,20],12]],
+   B:[[0,[17,19,21,23],12]],
+   C:[[0,[14,16,18,20],14]]}}},
+{name:"Pulsewidth Park", group:'ambient', bpm:118, swing:51, feel:1, fill:{every:4,amt:.35,style:'hat'},
+ master:{comp:.45}, delay:{time:'8',fb:.4,tone:3600},
+ chans:{0:{params:{tune:52,decay:.4,punch:.45,click:.2}},
+        2:{level:.5}, 3:{level:.5}, 5:{level:.55},
+        4:{level:.5,params:{tone:1100,decay:.3}},
+        7:{level:.4},
+        10:{level:.5,fx:{delay:.4},params:{tune:1400,decay:.1,drop:.25,harm:.25}}},
+ A:['X...X...X...X...',null,'..x...x...x...x.','......x.......x.','............x...','....x.......x...',null,'x.......x.......',null,null,'.x.....x....x...',null],
+ B:['X...X...X...X...',null,'..x...x...x...xx','......x.......x.','............x...','....x.......x...','..............x.','x.......x.......',null,null,'.x.....x....x..x',null],
+ C:['X.......X.......',null,null,null,null,null,null,'x.x.x.x.x.x.x.x.',null,null,'.x.....x....x...',null],
+ chain:[0,0,1,0,0,1,2,1],
+ synth:{root:36, scale:'minor',
+  bass:{patch:'Rubber Bass', lvl:.8, eq:{high:-3},
+   A:[[0,0,1],[2,0,1],[4,3,1],[6,3,1],[8,5,1],[10,5,1],[12,4,1],[14,4,1]],
+   B:[[0,0,1],[2,0,1],[4,3,1],[6,3,1],[8,7,1],[10,7,1],[12,5,1],[14,4,1]],
+   C:[[0,0,12]]},
+  keys:{patch:'Xtal Pad', lvl:.32, fx:{delay:.25},
+   mod:{target:'tone',shape:'tri',rate:'1/2',depth:.35},
+   A:[[0,[14,16,18],2],[8,[16,18,20],2]],
+   B:[[0,[15,17,19],2],[8,[14,16,18],2]],
+   C:[[0,[14,16,18],14]]}}},
+{name:"Strings of Motor City", group:'detroit', bpm:124, swing:53, feel:1, fill:{every:4,amt:.35,style:'mixed'},
+ master:{comp:.5}, delay:{time:'8',fb:.3,tone:3200},
+ chans:{0:{params:{tune:50,decay:.35,punch:.6,click:.4},fx:{drive:.2}},
+        4:{level:.7,params:{tone:1300,decay:.22,spread:.01,body:.4}},
+        2:{level:.5,params:{decay:.05,tone:8000}},
+        3:{level:.55,params:{decay:.3}}, 5:{level:.5}, 7:{level:.25}},
+ A:['X...X...X...X...',null,'x.x.x.x.x.x.x.x.','..x...x...x...x.','....X.......X...',null,null,'x.......x.......'],
+ B:['X...X...X...X...','...............x','x.x.x.x.x.x.x.x.','..x...x...x...x.','....X.......X...','.......x........','..............x.','x.......x.......'],
+ C:[null,null,'x.x.x.x.x.x.x.x.','..x...x...x...x.','....X.......X...',null,null,'x.......x.......'],
+ chain:[0,0,1,0,0,1,2,1],
+ synth:{root:38, scale:'minor',
+  bass:{patch:'Rubber Bass', lvl:.8, eq:{high:-3},
+   A:[[0,0,1],[2,7,1],[4,0,1],[6,7,1],[8,0,1],[10,7,1],[12,0,1],[14,7,1]],
+   B:[[0,0,1],[2,7,1],[4,0,1],[6,7,1],[8,3,1],[10,10,1],[12,4,1],[14,11,1]],
+   C:[[0,0,12]]},
+  keys:{patch:'Detroit Strings', lvl:.38, fx:{delay:.15},
+   filt:{type:'lp',cut:3200,res:1,mode:'sweep',rate:'2bar',depth:.3},
+   A:[[0,[14,16,18],1],[3,[14,16,18],1],[6,[15,17,19],1],[10,[16,18,20],1],[13,[15,17,19],1]],
+   B:[[0,[14,16,18],1],[3,[16,18,20],1],[6,[17,19,21],1],[10,[16,18,20],1],[14,[14,16,18],1]],
+   C:[[0,[14,16,18,21],14]]}}},
+{name:"No UFO Express", group:'detroit', bpm:126, swing:51, feel:1, fill:{every:4,amt:.4,style:'hat'},
+ master:{comp:.55}, delay:{time:'8',fb:.35,tone:3400},
+ chans:{0:{params:{tune:52,decay:.32,punch:.7,click:.45},fx:{drive:.25}},
+        4:{level:.65,params:{tone:1400,decay:.2,spread:.009,body:.35}},
+        2:{level:.55}, 3:{level:.5}, 5:{level:.5}, 7:{level:.2},
+        10:{level:.5,fx:{delay:.35},params:{tune:1600,decay:.09,drop:.3,harm:.3}},
+        11:{level:.45,fx:{delay:.3}}},
+ A:['X...X...X...X...',null,'x.x.x.x.x.x.x.x.','..x...x...x...x.','....X.......X...','.......x........',null,null,null,null,'.x.....x.....x..',null],
+ B:['X...X...X...X...',null,'x.x.x.x.x.x.x.x.','..x...x...x...x.','....X.......X...','.......x........',null,null,null,null,'.x.....x.....x.x','..............x.'],
+ C:['X...X...X...X...',null,null,'..x...x...x...x.',null,null,null,null,null,null,'.x.....x.....x..',null],
+ chain:[0,0,1,0,0,0,1,2],
+ synth:{root:36, scale:'minor',
+  bass:{patch:'P-Funk Moog', lvl:.8, eq:{high:-4},
+   filt:{type:'lp',cut:900,res:2.5,mode:'sweep',rate:'1/1',depth:.3},
+   A:[[0,0,1],[2,0,1],[4,0,1],[6,3,1],[8,0,1],[10,0,1],[12,4,1],[14,3,1]],
+   B:[[0,0,1],[2,0,1],[4,0,1],[6,3,1],[8,5,1],[10,5,1],[12,4,1],[14,3,1]],
+   C:[[0,0,12]]},
+  keys:{patch:'Velvet EP', lvl:.32, fx:{delay:.25},
+   filt:{type:'bp',cut:1500,res:2,mode:'rand',rate:'1/1',depth:.4},
+   A:[[2,[14,18],1],[10,[14,18],1]],
+   B:[[2,[14,18],1],[6,[15,19],1],[10,[14,18],1]],
+   C:[[2,[14,18],1]]}}},
+{name:"Hi-Tek Soul", group:'detroit', bpm:122, swing:55, feel:1, fill:{every:8,amt:.35,style:'mixed'},
+ master:{comp:.45}, delay:{time:'8d',fb:.35,tone:3000},
+ chans:{0:{params:{tune:48,decay:.4,punch:.5,click:.25}},
+        4:{level:.6,params:{tone:1200,decay:.3,spread:.012,body:.5}},
+        2:{level:.5}, 3:{level:.5}, 5:{level:.55,fx:{delay:.2}},
+        6:{level:.6,pan:.25}, 7:{level:.35,params:{hiss:.45,crackle:.3}}},
+ A:['X...X...X...X...',null,'..x...x...x...x.','......x.......x.','....X.......X...',null,'..x.....x....x..','x.......x.......'],
+ B:['X...X...X...X...',null,'..x...x...x...xx','......x.......x.','....X.......X...','.............x..','..x.....x....x..','x.......x.......'],
+ C:[null,null,'..x...x...x...x.','......x.........','....x.......x...',null,'..x.....x....x..','x.......x.......'],
+ chain:[0,1,0,1,2,1],
+ synth:{root:43, scale:'dorian',
+  bass:{patch:'Rubber Bass', lvl:.82, eq:{high:-3},
+   A:[[0,0,2],[4,0,1],[6,5,1],[8,3,2],[12,4,2]],
+   B:[[0,0,2],[4,0,1],[6,5,1],[8,6,2],[12,4,2]],
+   C:[[0,0,12]]},
+  keys:{patch:'Dust Rhodes', lvl:.36, fx:{delay:.2},
+   filt:{type:'lp',cut:2400,res:.8,mode:'sweep',rate:'2bar',depth:.35},
+   A:[[0,[14,16,18,20,22],6],[8,[17,19,21,23],6]],
+   B:[[0,[15,17,19,21],6],[8,[14,16,18,20,22],6]],
+   C:[[0,[14,16,18,20,22],14]]}}},
+{name:"Mahogany Loop", group:'detroit', bpm:121, swing:57, feel:1, fill:{every:8,amt:.3,style:'mixed'},
+ master:{comp:.45}, delay:{time:'8d',fb:.35,tone:2800},
+ chans:{0:{params:{tune:47,decay:.45,punch:.45,click:.15}},
+        4:{level:.5,params:{tone:1050,decay:.35,spread:.014,body:.6}},
+        2:{level:.4,params:{tone:6200}}, 3:{level:.45},
+        6:{level:.6,pan:.2}, 7:{level:.65,params:{crackle:.75,hiss:.45,tone:3400}}},
+ A:['X...X...X...X...',null,'..x...x...x...x.','......x.........','....x.......x...',null,'..........x....x','x.x.x.x.x.x.x.x.'],
+ B:['X...X...X...X...',null,'..x...x...x...xx','......x.........','....x.......x...','.............x..','..........x....x','x.x.x.x.x.x.x.x.'],
+ C:[null,null,'..x...x...x...x.',null,'....x.......x...',null,'..........x....x','x.x.x.x.x.x.x.x.'],
+ chain:[0,0,1,0,0,1,2,1],
+ synth:{root:38, scale:'dorian',
+  bass:{patch:'Rubber Bass', lvl:.82, eq:{high:-4},
+   A:[[0,0,2],[3,0,1],[6,4,1],[8,3,2],[11,4,1],[14,2,1]],
+   B:[[0,0,2],[3,0,1],[6,4,1],[8,6,2],[11,5,1],[14,4,1]],
+   C:[[0,0,12]]},
+  keys:{patch:'Dust Rhodes', lvl:.36, fx:{delay:.18},
+   filt:{type:'lp',cut:1600,res:1.2,mode:'sweep',rate:'2bar',depth:.45,cutout:.3},
+   A:[[0,[14,16,18,20],4],[6,[14,16,18,20],2],[8,[17,19,21,23],4],[14,[17,19,21,23],2]],
+   B:[[0,[14,16,18,20],4],[6,[14,16,18,20],2],[8,[19,21,23,25],4],[14,[19,21,23,25],2]],
+   C:[[0,[14,16,18,20],14]]}}},
+{name:"Spacek Shift", group:'detroit', bpm:96, swing:60, feel:2, fill:{every:8,amt:.35,style:'mixed'},
+ master:{comp:.45}, delay:{time:'8d',fb:.4,tone:3000},
+ chans:{0:{params:{tune:46,decay:.5,punch:.5,click:.2},fx:{drive:.2}},
+        1:{params:{tune:215,snap:.65,decay:.2,body:.55}},
+        2:{level:.45}, 5:{level:.55,fx:{delay:.25}},
+        7:{level:.45,params:{hiss:.5,crackle:.4}},
+        10:{level:.45,fx:{delay:.45},params:{tune:1200,decay:.12,drop:.2,harm:.15}}},
+ A:['X..x.....x..x...','....X......X....','x.x.x.x.x.x.x.x.',null,null,'..x.....x......x',null,'x.......x.......',null,null,'......x.......x.',null],
+ B:['X..x.....x..x..x','....X......X...x','x.x.x.x.x.x.x.x.','..............x.',null,'..x.....x......x',null,'x.......x.......',null,null,'......x...x...x.',null],
+ C:['X........x......','....X...........',null,null,null,'..x.....x.......',null,'x.x.x.x.x.x.x.x.',null,null,'......x.......x.',null],
+ chain:[0,0,1,0,0,1,2,1],
+ synth:{root:40, scale:'dorian',
+  bass:{patch:'Sub Bass', lvl:.85, eq:{high:-4},
+   A:[[0,0,1],[3,0,1],[7,5,1],[8,0,2],[13,3,1]],
+   B:[[0,0,1],[3,0,1],[7,5,1],[8,2,2],[13,4,1]],
+   C:[[0,0,12]]},
+  keys:{patch:'Velvet EP', lvl:.34, fx:{delay:.22},
+   filt:{type:'lp',cut:2200,res:.9,mode:'sweep',rate:'1/1',depth:.3},
+   mod:{target:'pan',shape:'sine',rate:'1/2',depth:.35},
+   chaos:{smear:.12},
+   A:[[1,[14,16,18,22],3],[8,[17,19,21,25],4]],
+   B:[[1,[15,17,19,23],3],[8,[14,16,18,22],4]],
+   C:[[0,[14,16,18,22],14]]}}},
+{name:"Left Hand Voodoo", group:'detroit', bpm:88, swing:66, feel:2, fill:{every:8,amt:.3,style:'mixed'},
+ master:{comp:.5}, delay:{time:'8d',fb:.35,tone:2600},
+ chans:{0:{params:{tune:45,decay:.6,punch:.4,click:.1},fx:{drive:.25}},
+        1:{params:{tune:185,snap:.6,decay:.24,body:.65}},
+        2:{level:.4}, 5:{level:.5},
+        6:{level:.55,pan:-.2}, 7:{level:.6,params:{crackle:.6,hiss:.5}}},
+ A:['X......x..x.....','....X.......X...','x...x...x...x...',null,null,'..........x.....','.............x..','x.x.x.x.x.x.x.x.'],
+ B:['X......x..x....x','....X.......X..x','x...x...x...x...','..............x.',null,'..........x....x','.............x..','x.x.x.x.x.x.x.x.'],
+ C:['X...............','....x.......x...',null,null,null,'..........x.....',null,'x.x.x.x.x.x.x.x.'],
+ chain:[0,1,0,1,2,1],
+ synth:{root:36, scale:'minor',
+  bass:{patch:'Sub Bass', lvl:.88, eq:{high:-5},
+   A:[[0,0,3],[7,0,1],[8,3,3],[14,4,1]],
+   B:[[0,0,3],[7,0,1],[8,5,3],[14,4,1]],
+   C:[[0,0,12]]},
+  keys:{patch:'Dust Rhodes', lvl:.34, fx:{delay:.15},
+   filt:{type:'lp',cut:1400,res:.8,mode:'off',rate:'1/1',depth:.5},
+   A:[[0,[14,16,18,20,22],7],[8,[12,14,16,18],7]],
+   B:[[0,[15,17,19,21],7],[8,[14,16,18,20,22],7]],
+   C:[[0,[12,14,16,18],14]]}}}
 ];
 
 function compileSeq(list){
@@ -887,12 +1112,13 @@ function loadPreset(idx){
   /* synth */
   const sy=p.synth||{root:45,scale:'minor',bass:{patch:'Upright'},keys:{patch:'Dust Rhodes'}};
   state.synth.root=sy.root; state.synth.scale=sy.scale; state.synth.sel=0;
-  [['bass',8],['keys',9]].forEach(([key,ci],pi)=>{
+  [['bass',N],['keys',N+1]].forEach(([key,ci],pi)=>{
     const cfg=sy[key]||{};
     const fresh=defPart(patchIdx(cfg.patch||'Velvet EP'), pi===0?0:12);
     const part=state.synth.parts[pi];
     Object.assign(part, fresh);
     if(cfg.mod) merge(part.mod, cfg.mod);
+    if(cfg.filt) merge(part.filt, cfg.filt);
     if(cfg.chaos) merge(part.chaos, cfg.chaos);
     if(cfg.lane){
       part.lane.on=!!cfg.lane.on;
@@ -950,7 +1176,14 @@ function initAudio(){
     c.drvDry.connect(c.j1); c.drvWet.connect(c.j1);
     c.j1.connect(c.crDry); c.j1.connect(c.crShape); c.crShape.connect(c.crWet);
     c.crDry.connect(c.j2); c.crWet.connect(c.j2);
-    c.j2.connect(c.eqL); c.eqL.connect(c.eqM); c.eqM.connect(c.eqH);
+    if(i>=N){
+      c.filt=ctx.createBiquadFilter(); c.filt.type='lowpass';
+      c.filt.frequency.value=12000; c.filt.Q.value=.7;
+      c.j2.connect(c.filt); c.filt.connect(c.eqL);
+    } else {
+      c.j2.connect(c.eqL);
+    }
+    c.eqL.connect(c.eqM); c.eqM.connect(c.eqH);
     c.eqH.connect(c.pan); c.pan.connect(c.fader);
     c.fader.connect(audio.bus); c.fader.connect(c.send); c.send.connect(audio.dIn);
     audio.ch.push(c);
@@ -984,6 +1217,14 @@ function applyChanAudio(i){
   const anySolo=state.chans.some(x=>x.solo);
   const audible=!s.mute && (!anySolo || s.solo);
   c.fader.gain.value=audible ? s.level : 0;
+  if(i>=N && c.filt) applyPartFilter(i-N);
+}
+function applyPartFilter(pi){
+  if(!audio.ready) return;
+  const ft=state.synth.parts[pi].filt, c=audio.ch[N+pi];
+  c.filt.type=ft.type==='hp'?'highpass':ft.type==='bp'?'bandpass':ft.type==='off'?'allpass':'lowpass';
+  c.filt.Q.value=ft.type==='off'?.0001:ft.res;
+  if(ft.mode==='off'||!state.playing) c.filt.frequency.setTargetAtTime(ft.cut, audio.ctx.currentTime, .02);
 }
 function applyMasterAudio(){
   if(!audio.ready) return;
@@ -1094,6 +1335,65 @@ const TRIG={
      env(g,tt,v*(.12+Math.random()*.4),.004+Math.random()*.008);
      n.connect(f); f.connect(g); g.connect(out);
    }
+ },
+ riser(t,v,p,out){
+   const ctx=audio.ctx,o=ctx.createOscillator(),g=ctx.createGain();
+   o.type='triangle';
+   const peakT=t+p.time*.75, endT=t+p.time;
+   const peakF=p.start*Math.pow(2,p.rise);
+   o.frequency.setValueAtTime(p.start,t);
+   o.frequency.exponentialRampToValueAtTime(peakF, peakT);
+   o.frequency.exponentialRampToValueAtTime(Math.max(60, peakF*(1-p.fall*.9)), endT);
+   g.gain.setValueAtTime(.0001,t);
+   g.gain.linearRampToValueAtTime(v*.55, t+.06);
+   g.gain.setValueAtTime(v*.55, t+p.time*.8);
+   g.gain.exponentialRampToValueAtTime(.0005, endT+.1);
+   o.connect(g); g.connect(out); o.start(t); o.stop(endT+.15);
+ },
+ siren(t,v,p,out){
+   const ctx=audio.ctx,o=ctx.createOscillator(),g=ctx.createGain();
+   o.type='square'; o.frequency.value=p.tune;
+   const l=ctx.createOscillator(); l.type='sine'; l.frequency.value=p.rate;
+   const lg=ctx.createGain(); lg.gain.value=p.tune*p.depth*.45;
+   l.connect(lg); lg.connect(o.frequency);
+   const endT=t+p.time;
+   g.gain.setValueAtTime(.0001,t);
+   g.gain.linearRampToValueAtTime(v*.4, t+.02);
+   g.gain.setValueAtTime(v*.4, t+p.time*.75);
+   g.gain.exponentialRampToValueAtTime(.0005, endT+.1);
+   o.connect(g); g.connect(out);
+   o.start(t); o.stop(endT+.15); l.start(t); l.stop(endT+.15);
+ },
+ bleep(t,v,p,out){
+   const ctx=audio.ctx,o=ctx.createOscillator(),g=ctx.createGain();
+   o.type='sine';
+   o.frequency.setValueAtTime(p.tune,t);
+   o.frequency.exponentialRampToValueAtTime(Math.max(80,p.tune*(1-p.drop*.7)), t+p.decay);
+   env(g,t,v*.7,p.decay); o.connect(g); g.connect(out); o.start(t); o.stop(t+p.decay+.05);
+   if(p.harm>.01){
+     const o2=ctx.createOscillator(),g2=ctx.createGain();
+     o2.type='square';
+     o2.frequency.setValueAtTime(p.tune,t);
+     o2.frequency.exponentialRampToValueAtTime(Math.max(80,p.tune*(1-p.drop*.7)), t+p.decay);
+     env(g2,t,v*p.harm*.3,p.decay*.8);
+     o2.connect(g2); g2.connect(out); o2.start(t); o2.stop(t+p.decay+.05);
+   }
+ },
+ zap(t,v,p,out){
+   const ctx=audio.ctx,o=ctx.createOscillator(),g=ctx.createGain();
+   o.type='sine';
+   const endF=Math.max(50, p.start*(1-p.fall*.95));
+   o.frequency.setValueAtTime(p.start,t);
+   o.frequency.exponentialRampToValueAtTime(endF, t+p.decay*.8);
+   env(g,t,v*.7,p.decay); o.connect(g); g.connect(out); o.start(t); o.stop(t+p.decay+.05);
+   if(p.buzz>.01){
+     const o2=ctx.createOscillator(),g2=ctx.createGain();
+     o2.type='sawtooth';
+     o2.frequency.setValueAtTime(p.start,t);
+     o2.frequency.exponentialRampToValueAtTime(endF, t+p.decay*.8);
+     env(g2,t,v*p.buzz*.3,p.decay*.7);
+     o2.connect(g2); g2.connect(out); o2.start(t); o2.stop(t+p.decay+.05);
+   }
  }
 };
 
@@ -1103,7 +1403,7 @@ function synthNote(pi, midi, t, vel, durSteps, macOver, detCents){
   const ctx=audio.ctx, part=state.synth.parts[pi], patch=PATCHES[part.patch];
   const mac=macOver||part.mac;
   const extraDet=detCents||0;
-  const ch=audio.ch[8+pi];
+  const ch=audio.ch[N+pi];
   const dur=Math.max(durSteps,0.6)*sp16();
   const cut=Math.min(11000, patch.cut*Math.pow(4,(mac.tone-.5)*2));
   const att=Math.max(.003, patch.a*Math.pow(6,(mac.att-.5)*2));
@@ -1174,7 +1474,7 @@ function synthMotion(pi, baseT, step){
   return {mac, panOff, panMod, dlyOff, dlyMod};
 }
 function applyMotionNodes(pi, mo, t){
-  const ci=8+pi, ch=audio.ch[ci], s=state.chans[ci];
+  const ci=N+pi, ch=audio.ch[ci], s=state.chans[ci];
   if(mo.panMod && ch.pan.pan){
     ch.pan.pan.setValueAtTime(Math.min(1,Math.max(-1,s.pan+mo.panOff)), Math.max(t-.001,audio.ctx.currentTime));
   }
@@ -1302,6 +1602,32 @@ function scheduleLoop(){
         let vel=(pi===1?.55:.72)*(1+(Math.random()-.5)*H.vel*0.5);
         applyMotionNodes(pi, mo, tt);
         synthNote(pi, midi, tt, Math.min(1,Math.max(.15,vel)), ev.l, mo.mac, det);
+      }
+    }
+    /* HAZE-4 channel filters: sweeps, random jumps & cutouts */
+    for(let pi=0;pi<2;pi++){
+      const part=state.synth.parts[pi], ft=part.filt, c=audio.ch[N+pi];
+      if(ft.mode!=='off' && ft.type!=='off'){
+        let f;
+        if(ft.mode==='rand'){
+          if(curStep%4===0 || part._rnd==null) part._rnd=Math.pow(2,(Math.random()*2-1)*ft.depth*3);
+          f=ft.cut*part._rnd;
+        }else{
+          const cyc={'2bar':.5,'1/1':1,'1/2':2,'1/4':4}[ft.rate]||1;
+          const bar=sp16()*16, t0=audio.playT0!=null?audio.playT0:t;
+          const ph=(((t-t0)/bar)*cyc)%1;
+          f=ft.cut*Math.pow(2, Math.sin(ph*Math.PI*2)*ft.depth*3);
+        }
+        c.filt.frequency.setTargetAtTime(Math.min(14000,Math.max(60,f)), t, .05);
+      }
+      if(ft.cutout>0 && (part._cutUntil||0)<t && Math.random()<ft.cutout*0.1){
+        const dur=sp16()*(1+Math.floor(Math.random()*2));
+        const s=state.chans[N+pi];
+        const anySolo=state.chans.some(x=>x.solo);
+        const base=(!s.mute&&(!anySolo||s.solo))?s.level:0;
+        c.fader.gain.setTargetAtTime(.0005, t, .008);
+        c.fader.gain.setTargetAtTime(base, t+dur, .025);
+        part._cutUntil=t+dur+sp16();
       }
     }
     drawQ.push({step:curStep, patt:state.curPatt, time:t, hits, fill:fillBar});
@@ -1582,7 +1908,7 @@ function renderSynthPage(){
     slider('Release',0,1,.01,mac.rel,pct,v=>{mac.rel=v;})
   );
   /* channel strip */
-  const ci=8+state.synth.sel, s=state.chans[ci];
+  const ci=N+state.synth.sel, s=state.chans[ci];
   hzChanBoxEl.innerHTML='';
   hzChanBoxEl.append(
     slider('Drive',0,1,.01,s.fx.drive,pct,v=>{s.fx.drive=v; applyChanAudio(ci);}),
@@ -1675,6 +2001,57 @@ function renderSynthMotion(){
     slider('Smear',0,1,.01,chs.smear,pct,v=>{chs.smear=v;})
   );
   hzMotBoxEl.append(cbox);
+  /* dedicated filter & cutouts */
+  const ft=part.filt, pidx=state.synth.sel;
+  hzMotBoxEl.append(el('h3',null,'Filter & cutouts'));
+  const ftRow=el('div','rowflex');
+  [['lp','LP'],['hp','HP'],['bp','BP'],['off','OFF']].forEach(([k,lab])=>{
+    const c=el('button','chip sm hz'+(ft.type===k?' sel':''),lab);
+    c.addEventListener('click',()=>{ft.type=k; applyPartFilter(pidx); renderSynthMotion();});
+    ftRow.append(c);
+  });
+  const dice=el('button','chip sm warn','🎲 Random');
+  dice.addEventListener('click',()=>{
+    ft.type=['lp','lp','hp','bp'][Math.floor(Math.random()*4)];
+    ft.cut=Math.round(200*Math.pow(2,Math.random()*5));
+    ft.res=+(0.5+Math.random()*6).toFixed(1);
+    ft.mode=['off','sweep','sweep','rand'][Math.floor(Math.random()*4)];
+    ft.rate=['2bar','1/1','1/2','1/4'][Math.floor(Math.random()*4)];
+    ft.depth=+(0.2+Math.random()*.6).toFixed(2);
+    ft.cutout=Math.random()<.5?0:+(Math.random()*.5).toFixed(2);
+    applyPartFilter(pidx); renderSynthMotion();
+  });
+  ftRow.append(dice);
+  hzMotBoxEl.append(ftRow);
+  const cutToSlider=c=>Math.log(c/60)/Math.log(200);
+  const sliderToCut=v=>Math.round(60*Math.pow(200,v));
+  const fbox=el('div','grid2 hz');
+  fbox.append(
+    slider('Cutoff',0,1,.005,cutToSlider(ft.cut),v=>sliderToCut(v)+'Hz',
+      v=>{ft.cut=sliderToCut(v); applyPartFilter(pidx);}),
+    slider('Resonance',.3,12,.1,ft.res,v=>'Q '+v.toFixed(1),
+      v=>{ft.res=v; applyPartFilter(pidx);})
+  );
+  hzMotBoxEl.append(fbox);
+  const swRow=el('div','rowflex');
+  [['off','Static'],['sweep','Sweep'],['rand','Random']].forEach(([k,lab])=>{
+    const c=el('button','chip sm hz'+(ft.mode===k?' sel':''),lab);
+    c.addEventListener('click',()=>{ft.mode=k; applyPartFilter(pidx); renderSynthMotion();});
+    swRow.append(c);
+  });
+  const sep2=el('span',null,'·'); sep2.style.color='var(--dim)'; swRow.append(sep2);
+  ['2bar','1/1','1/2','1/4'].forEach(rt=>{
+    const c=el('button','chip sm hz'+(ft.rate===rt?' sel':''),rt);
+    c.addEventListener('click',()=>{ft.rate=rt; renderSynthMotion();});
+    swRow.append(c);
+  });
+  hzMotBoxEl.append(swRow);
+  const fbox2=el('div','grid2 hz');
+  fbox2.append(
+    slider('Sweep depth',0,1,.01,ft.depth,pct,v=>{ft.depth=v;}),
+    slider('Cutouts',0,1,.01,ft.cutout,pct,v=>{ft.cutout=v;})
+  );
+  hzMotBoxEl.append(fbox2);
 }
 function renderRoll(){
   const part=curPart(), evs=part.seq[state.curPatt];
@@ -1972,7 +2349,7 @@ function snapshot(){
     master:state.master, delay:state.delay,
     synth:{root:state.synth.root, scale:state.synth.scale,
       parts:state.synth.parts.map(p=>({patch:p.patch, mac:p.mac, viewK:p.viewK, seq:p.seq,
-        mod:p.mod, lane:p.lane, chaos:p.chaos}))}});
+        mod:p.mod, lane:p.lane, chaos:p.chaos, filt:p.filt}))}});
 }
 function restoreSnapshot(json){
   let o; try{o=JSON.parse(json);}catch(e){return false;}
@@ -2041,11 +2418,13 @@ const presetSel=$('#presetSel');
   const gBoom=document.createElement('optgroup'); gBoom.label='Boom Bap';
   const gDub=document.createElement('optgroup'); gDub.label='Dub Reggae';
   const gDnb=document.createElement('optgroup'); gDnb.label='Jungle / DnB';
+  const gAmb=document.createElement('optgroup'); gAmb.label='Ambient Techno';
+  const gDet=document.createElement('optgroup'); gDet.label='Detroit House / Techno';
   PRESETS.forEach((p,i)=>{
     const o=document.createElement('option'); o.value=i; o.textContent=p.name;
-    (p.group==='dub'?gDub:p.group==='dnb'?gDnb:gBoom).append(o);
+    (p.group==='dub'?gDub:p.group==='dnb'?gDnb:p.group==='ambient'?gAmb:p.group==='detroit'?gDet:gBoom).append(o);
   });
-  presetSel.append(gBoom,gDub,gDnb);
+  presetSel.append(gBoom,gDub,gDnb,gAmb,gDet);
 }
 presetSel.addEventListener('change',()=>loadPreset(parseInt(presetSel.value)));
 
